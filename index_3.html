@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>社群競賽追蹤系統</title>
+<style>
+:root {
+  --bg:#0f0f13;--bg2:#1a1a22;--bg3:#24242f;--bg4:#2e2e3d;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--border3:rgba(255,255,255,0.22);
+  --text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;
+  --gold:#e8b84b;--gold-bg:rgba(232,184,75,0.1);--gold-bd:rgba(232,184,75,0.3);
+  --blue:#5b8af0;--blue-bg:rgba(91,138,240,0.1);--blue-bd:rgba(91,138,240,0.3);
+  --green:#4ecb8d;--green-bg:rgba(78,203,141,0.1);--green-bd:rgba(78,203,141,0.3);
+  --red:#f06b5b;--red-bg:rgba(240,107,91,0.1);--red-bd:rgba(240,107,91,0.3);
+  --orange:#f0955b;--orange-bg:rgba(240,149,91,0.1);--orange-bd:rgba(240,149,91,0.3);
+  --purple:#a78cf0;--purple-bg:rgba(167,140,240,0.1);--purple-bd:rgba(167,140,240,0.3);
+  --r:14px;--rs:8px;--r2:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang TC','Noto Sans TC',sans-serif;min-height:100vh;}
+.app{max-width:480px;margin:0 auto;padding:0 0 84px;min-height:100vh;}
+.screen{display:none;padding:0 15px;}
+.screen.active{display:block;}
+
+/* LOADING OVERLAY */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .4s;}
+.loading-overlay.hide{opacity:0;pointer-events:none;}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text2);}
+
+/* TOP BAR */
+.top-bar{padding:18px 0 10px;text-align:center;}
+.top-bar h1{font-size:18px;font-weight:800;letter-spacing:.3px;}
+.top-bar p{font-size:12px;color:var(--text2);margin-top:3px;}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 12px;border-radius:var(--r2);background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-bd);margin-bottom:7px;letter-spacing:.5px;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.6px;margin-bottom:11px;text-transform:uppercase;}
+.sec-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:14px;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.2px;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);}
+.btn-gold{background:var(--gold);color:#1a1200;}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;border-radius:var(--rs);}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+
+/* INPUTS */
+.inp{width:100%;padding:11px 13px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg3);color:var(--text);outline:none;}
+.inp:focus{border-color:var(--blue);}
+.inp-sm{padding:8px 11px;font-size:13px;}
+.inp-num{width:130px;text-align:right;font-weight:700;font-size:15px;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--rs);background:var(--bg3);color:var(--text);outline:none;}
+.inp-num:focus{border-color:var(--blue);}
+
+/* LOGIN */
+.name-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:15px;}
+.name-btn{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:22px 12px;font-size:16px;font-weight:800;cursor:pointer;text-align:center;transition:all .2s;color:var(--text);}
+.name-btn .av{font-size:34px;margin-bottom:7px;display:block;}
+.name-btn.selected{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.admin-link{font-size:12px;color:var(--text3);text-align:center;cursor:pointer;margin-top:13px;padding:8px;}
+
+/* WEEK TABS */
+.wtabs{display:flex;gap:5px;margin-bottom:13px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
+.wtabs::-webkit-scrollbar{display:none;}
+.wtab{flex-shrink:0;font-size:12px;font-weight:700;padding:6px 13px;border-radius:var(--r2);border:1px solid var(--border2);cursor:pointer;background:transparent;color:var(--text2);transition:all .15s;letter-spacing:.2px;white-space:nowrap;}
+.wtab.active{background:var(--bg3);color:var(--text);border-color:var(--border3);}
+.wtab.current{border-color:var(--blue-bd);color:var(--blue);}
+.wtab.active.current{background:var(--blue-bg);}
+
+/* DAY GRID */
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:13px;}
+.day-btn{height:44px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;}
+.day-btn .ds{font-size:8px;line-height:1;}
+.day-btn.today{border-color:var(--blue-bd);color:var(--blue);}
+.day-btn.submitted{background:var(--orange-bg);border-color:var(--orange-bd);color:var(--orange);}
+.day-btn.approved{background:var(--green-bg);border-color:var(--green-bd);color:var(--green);}
+.day-btn.rejected{background:var(--red-bg);border-color:var(--red-bd);color:var(--red);}
+.day-btn.selected{border:2px solid var(--text);color:var(--text);}
+
+/* TASK ROWS */
+.t-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.t-row:last-child{border-bottom:none;}
+.t-check{width:23px;height:23px;border-radius:6px;border:1.5px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;background:transparent;}
+.t-check.done{background:var(--green);border-color:var(--green);}
+.t-check.done::after{content:'';width:10px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translateY(-2px);display:block;}
+.t-label{font-size:14px;color:var(--text);flex:1;font-weight:500;}
+.t-detail{font-size:11px;color:var(--text3);margin-top:1px;}
+
+/* NUMBER INPUT ROWS */
+.n-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);}
+.n-row:last-child{border-bottom:none;}
+.n-label{flex:1;}
+.n-label .t-label{font-size:14px;}
+.n-label .t-detail{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* SEG */
+.seg{display:flex;background:var(--bg3);border-radius:var(--rs);padding:3px;gap:3px;margin-bottom:14px;}
+.seg-btn{flex:1;padding:8px 6px;border:none;background:transparent;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;letter-spacing:.1px;}
+.seg-btn.active{background:var(--bg2);color:var(--text);border:1px solid var(--border2);}
+
+/* INFO ROWS */
+.i-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.i-row:last-child{border-bottom:none;}
+.i-label{color:var(--text2);}
+.i-value{color:var(--text);font-weight:700;}
+
+/* SCORE GRID */
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.sc-card{background:var(--bg3);border-radius:var(--rs);padding:13px;text-align:center;}
+.sc-num{font-size:26px;font-weight:900;color:var(--text);}
+.sc-lbl{font-size:10px;color:var(--text3);margin-top:2px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+
+/* RANKING */
+.rk-row{display:flex;align-items:center;gap:11px;padding:11px 9px;border-radius:var(--rs);margin-bottom:5px;}
+.rk-row.me{background:var(--blue-bg);border:1px solid var(--blue-bd);}
+.rk-medal{font-size:21px;width:28px;text-align:center;flex-shrink:0;}
+.rk-av{width:40px;height:40px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;border:1px solid var(--border2);}
+.rk-name{flex:1;font-size:15px;font-weight:800;}
+.rk-score{font-size:16px;font-weight:900;color:var(--gold);}
+
+/* WEEK HERO */
+.w-hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px;display:flex;justify-content:space-between;align-items:flex-start;}
+.w-hero-l .wn{font-size:16px;font-weight:900;margin-bottom:3px;}
+.w-hero-l .wm{font-size:12px;color:var(--text2);}
+.w-hero-l .wp{font-size:11px;color:var(--text3);margin-top:3px;}
+.w-hero-r{text-align:right;flex-shrink:0;margin-left:10px;}
+.prize{font-size:22px;font-weight:900;color:var(--gold);}
+.settle{font-size:11px;color:var(--text3);margin-top:1px;}
+.extra{font-size:11px;color:var(--orange);margin-top:2px;}
+
+/* NOTICE */
+.notice{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 13px;font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6;}
+.notice.warn{border-color:var(--orange-bd);background:var(--orange-bg);color:var(--orange);}
+.notice.ok{border-color:var(--green-bd);background:var(--green-bg);color:var(--green);}
+.notice.info{border-color:var(--blue-bd);background:var(--blue-bg);color:var(--blue);}
+
+/* TAGS */
+.tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 9px;border-radius:var(--r2);letter-spacing:.3px;}
+.tag-pending{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-bd);}
+.tag-approved{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.tag-rejected{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;padding:5px 8px 9px;gap:3px;z-index:100;}
+.nb{flex:1;padding:7px 4px;border:none;background:transparent;cursor:pointer;font-size:10px;color:var(--text3);border-radius:var(--rs);transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700;letter-spacing:.1px;}
+.nb.active{color:var(--blue);background:var(--blue-bg);}
+.ni{width:19px;height:19px;}
+
+/* ADMIN CARDS */
+.rev-card{background:var(--bg3);border-radius:var(--r);padding:13px;margin-bottom:10px;border:1px solid var(--border);}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px;}
+.cmp-c{border:1px solid var(--border);border-radius:var(--rs);padding:11px;text-align:center;background:var(--bg2);}
+.cmp-c.win{border-color:var(--gold-bd);background:var(--gold-bg);}
+.cmp-n{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700;}
+.cmp-c.win .cmp-n{color:var(--gold);}
+.cmp-stat{font-size:10px;color:var(--text3);margin-bottom:1px;}
+.cmp-val{font-size:19px;font-weight:900;color:var(--text);}
+.cmp-c.win .cmp-val{color:var(--gold);}
+.win-btns{display:flex;gap:7px;margin-bottom:10px;}
+.win-pick{flex:1;padding:9px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);font-size:13px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;}
+.win-pick.sel{border-color:var(--gold-bd);background:var(--gold-bg);color:var(--gold);}
+.ck-rev{background:var(--bg3);border-radius:var(--r);padding:13px;margin-bottom:9px;border:1px solid var(--border);}
+.act-btns{display:flex;gap:7px;margin-top:10px;}
+.act-approve{flex:1;padding:9px;border-radius:var(--rs);border:1px solid var(--green-bd);background:var(--green-bg);font-size:13px;font-weight:700;cursor:pointer;color:var(--green);}
+.act-reject{flex:1;padding:9px;border-radius:var(--rs);border:1px solid var(--red-bd);background:var(--red-bg);font-size:13px;font-weight:700;cursor:pointer;color:var(--red);}
+
+/* ADMIN MGMT */
+.mgmt-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
+.mgmt-row:last-child{border-bottom:none;}
+.mgmt-label{flex:1;font-size:13px;color:var(--text);}
+.mgmt-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.del-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.add-row{display:flex;gap:8px;align-items:center;margin-top:10px;}
+
+/* PROG BAR */
+.prog-bg{width:80px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .4s;}
+
+/* TOAST */
+.toast{position:fixed;bottom:94px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 20px;font-size:13px;font-weight:700;color:var(--text);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.toast.show{opacity:1;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r) var(--r) 0 0;padding:22px 18px 30px;width:100%;max-width:480px;}
+.modal h3{font-size:16px;font-weight:900;margin-bottom:15px;}
+.modal .close-x{float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;margin-top:-2px;}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:11px 0;}
+
+/* DELTA */
+.d-plus{color:var(--green);font-weight:900;}
+.d-minus{color:var(--red);font-weight:900;}
+
+/* EMPTY */
+.empty{text-align:center;padding:28px 0;font-size:13px;color:var(--text3);}
+
+/* AVATAR */
+.color-picker{display:flex;gap:9px;justify-content:center;margin-top:10px;}
+.color-dot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s;flex-shrink:0;}
+.color-dot.sel{border-color:#fff;transform:scale(1.18);}
+.av-circle{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s;margin:0 auto;}
+
+/* SYNC BADGE */
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);padding:4px 10px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--border);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.sync-dot.err{background:var(--red);}
+.sync-dot.loading{background:var(--orange);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">連線中...</div>
+</div>
+
+<div class="app">
+<div id="toast" class="toast"></div>
+
+<!-- MODALS -->
+<div id="modal-admin" class="modal-bg">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('admin')">×</button>
+    <h3>主管登入 🔐</h3>
+    <input class="inp" type="password" id="admin-pw" placeholder="輸入管理密碼" style="margin-bottom:12px;" />
+    <button class="btn btn-primary" onclick="adminLogin()">登入</button>
+  </div>
+</div>
+
+<div id="modal-add-week" class="modal-bg">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('add-week')">×</button>
+    <h3>新增週數</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">KPI 任務將從前一週複製，可進入「週設定」再調整</div>
+    <div style="margin-bottom:10px;"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">週主題（例：第6週｜互動爆發週）</label><input class="inp" id="new-week-title" placeholder="第X週｜主題週" /></div>
+    <div style="margin-bottom:10px;"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">競賽重點說明</label><input class="inp" id="new-week-metric" placeholder="例：留言互動數最高" /></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">期間（例：5/04–5/10）</label><input class="inp inp-sm" id="new-week-period" placeholder="5/04–5/10" /></div>
+      <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">結算日（例：5/11）</label><input class="inp inp-sm" id="new-week-settle" placeholder="5/11" /></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">競賽獎金 NT$</label><input class="inp inp-sm" id="new-week-prize" type="number" placeholder="1000" /></div>
+      <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">業績獎金（選填）</label><input class="inp inp-sm" id="new-week-extra" placeholder="留空則不顯示" /></div>
+    </div>
+    <button class="btn btn-gold" onclick="confirmAddWeek()">建立週數</button>
+  </div>
+</div>
+
+<div id="modal-week-settings" class="modal-bg">
+  <div class="modal" style="max-height:85vh;overflow-y:auto;">
+    <button class="close-x" onclick="closeModal('week-settings')">×</button>
+    <h3 id="wset-title">週設定</h3>
+    <div class="card-title">KPI 任務</div>
+    <div id="wset-kpi-list"></div>
+    <div class="add-row">
+      <input class="inp inp-sm" id="new-kpi-label" placeholder="任務名稱（例：直播場次）" style="flex:1;" />
+      <input class="inp inp-sm" id="new-kpi-detail" placeholder="說明（例：每週1場）" style="width:130px;" />
+      <button class="btn btn-sm btn-primary" onclick="addKpi()" style="width:60px;">＋ 加</button>
+    </div>
+    <div class="divider"></div>
+    <div class="notice info" style="margin-top:10px;">補填數據欄位為全部週共用，請至「設定」頁面的上方區塊新增或刪除。</div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="deleteWeek()" style="width:100%;color:var(--red);border-color:var(--red-bd);">刪除此週</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div class="top-bar">
+    <div class="badge">競賽追蹤系統</div>
+    <h1>社群爆發計畫</h1>
+    <p>每日任務 · 數據回報 · 即時排名</p>
+  </div>
+  <div style="margin-top:20px;">
+    <div class="name-grid">
+      <button class="name-btn" id="btn-凱" onclick="selName('阿凱',this)">
+        <div class="av-circle" id="av-login-凱" style="background:#5b8af0;">
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="13" r="7" fill="rgba(255,255,255,0.9)"/><path d="M5 34c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="rgba(255,255,255,0.9)"/></svg>
+        </div>
+        <span style="font-size:15px;font-weight:800;">阿凱</span>
+        <div class="color-picker" id="cp-凱" onclick="event.stopPropagation()"></div>
+      </button>
+      <button class="name-btn" id="btn-安" onclick="selName('阿安',this)">
+        <div class="av-circle" id="av-login-安" style="background:#e8b84b;">
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="13" r="7" fill="rgba(255,255,255,0.9)"/><path d="M5 34c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="rgba(255,255,255,0.9)"/></svg>
+        </div>
+        <span style="font-size:15px;font-weight:800;">阿安</span>
+        <div class="color-picker" id="cp-安" onclick="event.stopPropagation()"></div>
+      </button>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">進入系統</button>
+    <div class="admin-link" onclick="openModal('admin')">主管入口 →</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="screen-main" class="screen">
+  <div class="top-bar">
+    <h1 id="main-hi"></h1>
+    <p id="main-date"></p>
+  </div>
+
+  <div id="tab-today" class="tc">
+    <div id="week-info-bar"></div>
+    <div id="wh-today"></div>
+    <div class="card">
+      <div class="seg">
+        <button class="seg-btn active" id="sg-checkin" onclick="switchSeg('checkin')">今日任務</button>
+        <button class="seg-btn" id="sg-data" onclick="switchSeg('data')">補填數據</button>
+      </div>
+      <div id="sg-checkin-c">
+        <div id="checkin-body"></div>
+        <button class="btn btn-primary" id="btn-checkin" onclick="submitCheckin()" style="margin-top:11px;">送出今日任務</button>
+      </div>
+      <div id="sg-data-c" style="display:none;">
+        <div class="notice info">填寫昨天的數據，主管審核後計入排名</div>
+        <div id="data-body"></div>
+        <button class="btn btn-primary" id="btn-data" onclick="submitData()" style="margin-top:11px;">送出數據</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-rank" class="tc" style="display:none;">
+    <div id="wh-rank"></div>
+    <div class="card"><div class="sec-title">積分排行</div><div id="rank-list"></div></div>
+    <div class="card"><div class="sec-title">每日數據記錄</div><div id="daily-data"></div></div>
+    <div class="card"><div class="sec-title">我的成績</div><div class="sc-grid" id="my-scores"></div></div>
+  </div>
+
+  <div id="tab-rules" class="tc" style="display:none;">
+    <div id="rules-body"></div>
+  </div>
+
+  <div class="bnav">
+    <button class="nb active" id="nav-today" onclick="switchTab('today',this)">
+      <svg class="ni" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>任務
+    </button>
+    <button class="nb" id="nav-rank" onclick="switchTab('rank',this)">
+      <svg class="ni" viewBox="0 0 20 20" fill="none"><path d="M10 3l1.9 3.8 4.2.6-3 3 .7 4.2L10 12.5l-3.8 2.1.7-4.2-3-3 4.2-.6L10 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>排行
+    </button>
+    <button class="nb" id="nav-rules" onclick="switchTab('rules',this)">
+      <svg class="ni" viewBox="0 0 20 20" fill="none"><path d="M6 10h8M6 7h8M6 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>規則
+    </button>
+    <button class="nb" onclick="doLogout()">
+      <svg class="ni" viewBox="0 0 20 20" fill="none"><path d="M13 3h2a2 2 0 012 2v10a2 2 0 01-2 2h-2M9 14l4-4-4-4M3 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>登出
+    </button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="screen-admin" class="screen">
+  <div class="top-bar">
+    <h1>主管後台 ⚙️</h1>
+    <p id="admin-date"></p>
+  </div>
+  <div class="wtabs" id="wt-admin"></div>
+  <div class="seg">
+    <button class="seg-btn active" id="asg-checkin" onclick="switchAdminSeg('checkin')">任務審核</button>
+    <button class="seg-btn" id="asg-data" onclick="switchAdminSeg('data')">數據審核</button>
+    <button class="seg-btn" id="asg-board" onclick="switchAdminSeg('board')">排行板</button>
+    <button class="seg-btn" id="asg-settings" onclick="switchAdminSeg('settings')">設定</button>
+  </div>
+  <div id="asc-checkin"></div>
+  <div id="asc-data" style="display:none;"></div>
+  <div id="asc-board" style="display:none;"></div>
+  <div id="asc-settings" style="display:none;"></div>
+  <button class="btn btn-ghost" onclick="adminLogout()" style="margin-top:8px;">登出主管</button>
+</div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────
+// CONFIG
+// ────────────────────────────────────────────────
+const ADMIN_PW = '12345';
+const EMPLOYEES = [{name:'阿凱',emoji:'👨'},{name:'阿安',emoji:'👨'}];
+const DAY_NAMES = ['一','二','三','四','五','六','日'];
+
+const AV_COLORS = ['#5b8af0','#e8b84b','#4ecb8d','#f06b5b','#a78cf0'];
+const AV_LABELS = ['藍','金','綠','紅','紫'];
+function getAvColor(name){return ld('avcolor_'+name)||(name==='阿凱'?AV_COLORS[0]:AV_COLORS[1]);}
+function setAvColor(name,color){sd('avcolor_'+name,color);}
+
+function avSVG(color,size=40){
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="${Math.round(size*.65)}" height="${Math.round(size*.65)}" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="13" r="7" fill="rgba(255,255,255,0.92)"/><path d="M5 34c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="rgba(255,255,255,0.92)"/></svg></div>`;
+}
+
+function renderColorPickers(){
+  ['凱','安'].forEach(k=>{
+    const name=k==='凱'?'阿凱':'阿安';
+    const cur=getAvColor(name);
+    const cp=document.getElementById('cp-'+k);
+    if(!cp)return;
+    cp.innerHTML=AV_COLORS.map((c,i)=>`<div class="color-dot${c===cur?' sel':''}" style="background:${c};" title="${AV_LABELS[i]}" onclick="pickAvColor('${name}','${c}','${k}')"></div>`).join('');
+    const av=document.getElementById('av-login-'+k);
+    if(av)av.style.background=cur;
+  });
+}
+
+// ────────────────────────────────────────────────
+// DEFAULT WEEKS DATA
+// ────────────────────────────────────────────────
+const DEFAULT_WEEKS = [
+  {id:1,title:'第1週｜流量爆發週',sub:'拚流量',period:'4/1–4/12',settle:'4/13',metric:'Reels + Threads 觀看總合最高',prize:1000,extraPrize:'',kpi:[{id:'reels',label:'Reels 發佈',detail:'1~2支/天（各帳號1支）'},{id:'threads',label:'Threads 發文',detail:'5篇（兩帳號合計）'}],bonus:['每日第1名：+10分','蟬聯第2天第1名：+5分'],rules:['不得刷流量、買觀看','不得使用釣魚內容','內容需符合品牌定位','若內容明顯偏離，公司可取消資格','帳號違規或限流，當天不計'],penalty:'最後一名：請大家喝飲料',reverse:''},
+  {id:2,title:'第2週｜流量爆發週',sub:'拚流量',period:'4/13–4/19',settle:'4/20',metric:'Reels + Threads 觀看總合最高',prize:1000,extraPrize:'',kpi:[{id:'reels',label:'Reels 發佈',detail:'1支/天（各帳號）'},{id:'threads',label:'Threads 發文',detail:'5篇（兩帳號合計）'}],bonus:['每日第1名：+10分','蟬聯第2天第1名：+5分'],rules:['不得刷流量、買觀看','不得使用釣魚內容','內容需符合品牌定位','若內容明顯偏離，公司可取消資格','帳號違規或限流，當天不計'],penalty:'最後一名：請大家喝飲料',reverse:''},
+  {id:3,title:'第3週｜漲粉爆發週',sub:'拚粉絲',period:'4/20–4/26',settle:'4/27',metric:'兩帳號新增粉絲數加總最多',prize:1000,extraPrize:'',kpi:[{id:'reels',label:'Reels 發佈',detail:'1支/天（各帳號）'},{id:'story',label:'限動發佈',detail:'8~10則（兩帳號合計）'},{id:'threads',label:'Threads 發文',detail:'5篇（兩帳號合計）'}],bonus:['每日第1名：+10分','連勝再+5分'],rules:['不得買粉、抽獎灌粉','粉絲需為真實帳號','重複關注/退追不列入','公司可調整認列'],penalty:'最後一名：請飲料 + 群組分享三件事',reverse:'上週最後一名 → 本週第一名 +500元'},
+  {id:4,title:'第4週｜引流爆發週',sub:'拚詢問',period:'4/27–5/03',settle:'5/04',metric:'有效詢問 + 持續對話數',prize:1500,extraPrize:'有效詢問 10元/人',kpi:[{id:'reels',label:'Reels 發佈',detail:'1支/天（各帳號）'},{id:'story',label:'限動發佈',detail:'8則以上（2帳號合計）'},{id:'threads',label:'Threads 發文',detail:'5篇（2帳號合計）'},{id:'inquiry',label:'詢問人數',detail:'每週目標5人'}],bonus:['每日第1名：+10分','連勝再+5分'],rules:['有來回3句以上才算有效','同一人只計1次','不得灌水或找朋友','未回覆未承接不列入'],penalty:'最後一名：請飲料 + 隔天加拍1支影片',reverse:'上週最後一名 → 本週第一名 +500元'},
+  {id:5,title:'第5週｜成交爆發週',sub:'拚轉化',period:'5/04–5/10',settle:'5/11',metric:'成交數最多',prize:2000,extraPrize:'課程/法會利潤 × 2%~5%',kpi:[{id:'reels',label:'Reels 發佈',detail:'1支/天（各帳號）'},{id:'story',label:'限動發佈',detail:'8~10則（2帳號合計）'},{id:'threads',label:'Threads 發文',detail:'5篇（2帳號合計）'},{id:'orders',label:'成交單數',detail:'每日目標1單'}],bonus:['每日第1名：+10分','連勝再+5分','達成每日KPI再+5分'],rules:['必須為實收訂單','退款未付款不算','不得亂承諾','訂單需可追溯','客訴可取消'],penalty:'最後一名：請飲料 + 群組寫100字心得',reverse:'上週最後一名 → 本週第一名 +500元'},
+];
+
+const DEFAULT_DATA_FIELDS = [
+  {id:'reels_mystic',label:'Reels 玄學帳號',detail:'最高觀看數那支'},
+  {id:'reels_course',label:'Reels 課程帳號',detail:'最高觀看數那支'},
+  {id:'threads_top',label:'Threads 最高瀏覽',detail:'最好的一篇'},
+];
+
+// ────────────────────────────────────────────────
+// SUPABASE CONFIG
+// ────────────────────────────────────────────────
+const SB_URL = 'https://mezttaguledgyzogckse.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lenR0YWd1bGVkZ3l6b2dja3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDY4MTQsImV4cCI6MjA5MTQ4MjgxNH0.3IwHdqu8JUHFg_xcT5RrCKNQ2EVCw0TT0Tieuq-JlYM';
+
+function sbFetch(path, opt={}){
+  return fetch(SB_URL+'/rest/v1/'+path, {
+    headers:{
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer '+SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...( opt.headers||{} )
+    },
+    ...opt
+  });
+}
+
+// ────────────────────────────────────────────────
+// PERSISTENCE
+// ────────────────────────────────────────────────
+function ld(k){try{return JSON.parse(localStorage.getItem('ct5_'+k));}catch(e){return null;}}
+function sd(k,v){localStorage.setItem('ct5_'+k,JSON.stringify(v));}
+
+// Runtime state — loaded from Supabase
+let WEEKS = JSON.parse(JSON.stringify(DEFAULT_WEEKS));
+let DATA_FIELDS = JSON.parse(JSON.stringify(DEFAULT_DATA_FIELDS));
+
+let STATE = {
+  user: null,
+  selWeek: 0,
+  checkins: {},
+  viewData: {},
+  scores: {},
+  taskState: {},
+  adminSelWeek: 0,
+  adminWinnerPick: {},
+  editingWeekIdx: 0,
+};
+
+// ────────────────────────────────────────────────
+// SETTINGS SYNC — WEEKS & DATA_FIELDS via Supabase `settings` table
+// ────────────────────────────────────────────────
+async function loadSettings(){
+  try {
+    const res = await sbFetch('settings?select=*');
+    if(!res.ok) throw new Error('settings load failed');
+    const rows = await res.json();
+    rows.forEach(r => {
+      if(r.key === 'weeks' && Array.isArray(r.value)) WEEKS = r.value;
+      if(r.key === 'data_fields' && Array.isArray(r.value)) DATA_FIELDS = r.value;
+    });
+  } catch(e) {
+    // Fall back to defaults silently — table may not exist yet
+    console.warn('Settings load failed, using defaults:', e);
+  }
+}
+
+async function saveSettings(key, value){
+  try {
+    await sbFetch('settings?on_conflict=key', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+    });
+  } catch(e) {
+    console.warn('Settings save failed:', e);
+    showToast('設定儲存失敗，請重試','err');
+  }
+}
+
+async function saveWeeks(){ await saveSettings('weeks', WEEKS); }
+async function saveDataFields(){ await saveSettings('data_fields', DATA_FIELDS); }
+
+// ────────────────────────────────────────────────
+// LOAD ALL DATA FROM SUPABASE
+// ────────────────────────────────────────────────
+async function sbLoadAll(){
+  try {
+    const [ckRes, vdRes, scRes] = await Promise.all([
+      sbFetch('checkins?select=*'),
+      sbFetch('view_data?select=*'),
+      sbFetch('scores?select=*'),
+    ]);
+    const [cks, vds, scs] = await Promise.all([ckRes.json(), vdRes.json(), scRes.json()]);
+    STATE.checkins = {};
+    if(Array.isArray(cks)) cks.forEach(r => { STATE.checkins[ckKey(r.user_name, r.week_idx, r.day)] = r; });
+    STATE.viewData = {};
+    if(Array.isArray(vds)) vds.forEach(r => { STATE.viewData[vdKey(r.user_name, r.week_idx, r.day)] = r; });
+    STATE.scores = {};
+    if(Array.isArray(scs)) scs.forEach(r => { STATE.scores[r.score_key] = r; });
+  } catch(e) {
+    showToast('載入資料失敗','err');
+    throw e;
+  }
+}
+
+// ────────────────────────────────────────────────
+// SUPABASE DATA OPERATIONS
+// ────────────────────────────────────────────────
+async function saveCheckin(record){
+  const key = ckKey(record.user, record.wIdx, record.day);
+  STATE.checkins[key] = record;
+  const row = {user_name:record.user, week_idx:record.wIdx, week:record.week, day:record.day, tasks:record.tasks, completed:record.completed, total:record.total, status:record.status, ts:record.ts};
+  await sbFetch('checkins?on_conflict=user_name,week_idx,day', {
+    method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify(row)
+  });
+}
+
+async function updateCheckinStatus(key, status){
+  const r = STATE.checkins[key]; if(!r) return;
+  r.status = status;
+  await sbFetch(`checkins?user_name=eq.${encodeURIComponent(r.user_name)}&week_idx=eq.${r.week_idx}&day=eq.${r.day}`, {
+    method:'PATCH',
+    headers:{'Prefer':''},
+    body:JSON.stringify({status})
+  });
+}
+
+async function saveViewDataRecord(record){
+  const key = vdKey(record.user, record.wIdx, record.day);
+  STATE.viewData[key] = record;
+  const row = {user_name:record.user, week_idx:record.wIdx, week:record.week, day:record.day, fields:record.fields, approved:false, ts:record.ts};
+  await sbFetch('view_data?on_conflict=user_name,week_idx,day', {
+    method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify(row)
+  });
+}
+
+async function approveViewData(user, wIdx, day){
+  const key = vdKey(user, wIdx, day);
+  if(STATE.viewData[key]) STATE.viewData[key].approved = true;
+  await sbFetch(`view_data?user_name=eq.${encodeURIComponent(user)}&week_idx=eq.${wIdx}&day=eq.${day}`, {
+    method:'PATCH',
+    headers:{'Prefer':''},
+    body:JSON.stringify({approved:true})
+  });
+}
+
+async function saveScore(scoreKey, record){
+  STATE.scores[scoreKey] = record;
+  const row = {score_key:scoreKey, week_idx:record.wIdx, day:record.day, winner:record.winner, points:record.points, ts:record.ts};
+  await sbFetch('scores?on_conflict=score_key', {
+    method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify(row)
+  });
+}
+
+// ────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────
+function getTodayIdx(){const d=new Date().getDay();return d===0?6:d-1;}
+function prevDay(i){return i===0?6:i-1;}
+function ckKey(user,wIdx,day){return `${user}_w${wIdx+1}_d${day}`;}
+function vdKey(user,wIdx,day){return `${user}_w${wIdx+1}_d${day}`;}
+function scKey(wIdx,day){return `w${wIdx+1}_d${day}`;}
+function genId(){return Math.random().toString(36).slice(2,8);}
+
+function parseDate(str){
+  const [m,d]=str.trim().split('/').map(Number);
+  return new Date(new Date().getFullYear(),m-1,d);
+}
+function getCurrentWeek(){
+  const today=new Date();today.setHours(0,0,0,0);
+  for(let i=0;i<WEEKS.length;i++){
+    const parts=WEEKS[i].period.split('–');
+    if(parts.length<2)continue;
+    const start=parseDate(parts[0]);
+    const end=parseDate(parts[1]);end.setHours(23,59,59,999);
+    if(today>=start&&today<=end)return i;
+  }
+  const firstStart=parseDate(WEEKS[0].period.split('–')[0]);
+  if(today<firstStart)return 0;
+  return WEEKS.length-1;
+}
+
+// ────────────────────────────────────────────────
+// LOADING OVERLAY
+// ────────────────────────────────────────────────
+function showLoading(msg='連線中...'){
+  const ov=document.getElementById('loading-overlay');
+  document.getElementById('loading-text').textContent=msg;
+  ov.classList.remove('hide');
+}
+function hideLoading(){
+  const ov=document.getElementById('loading-overlay');
+  ov.classList.add('hide');
+}
+
+// ────────────────────────────────────────────────
+// MODAL / TOAST
+// ────────────────────────────────────────────────
+function openModal(id){document.getElementById('modal-'+id).classList.add('open');if(id==='admin')setTimeout(()=>document.getElementById('admin-pw').focus(),100);}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.color=type==='ok'?'var(--green)':type==='err'?'var(--red)':'var(--text)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ────────────────────────────────────────────────
+// AUTH
+// ────────────────────────────────────────────────
+function pickAvColor(name,color,k){
+  setAvColor(name,color);
+  const av=document.getElementById('av-login-'+k);
+  if(av)av.style.background=color;
+  renderColorPickers();
+}
+
+async function adminLogin(){
+  if(document.getElementById('admin-pw').value===ADMIN_PW){
+    closeModal('admin');
+    showLoading('主管資料載入中...');
+    try {
+      await loadSettings();
+      await sbLoadAll();
+    } finally {
+      hideLoading();
+    }
+    showScreen('admin');
+    renderAdmin();
+  } else {
+    showToast('密碼錯誤','err');
+  }
+}
+function adminLogout(){showScreen('login');}
+let _selName=null;
+function selName(n,btn){_selName=n;document.querySelectorAll('.name-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');}
+
+async function doLogin(){
+  if(!_selName){showToast('請先選擇名字','err');return;}
+  STATE.user=_selName;
+  showLoading('資料載入中...');
+  try {
+    await loadSettings();
+    await sbLoadAll();
+  } finally {
+    hideLoading();
+  }
+  STATE.selWeek=getCurrentWeek();
+  showScreen('main');
+  const color=getAvColor(_selName);
+  document.getElementById('main-hi').innerHTML=`<span style="display:inline-flex;align-items:center;gap:10px;vertical-align:middle;">${avSVG(color,32)}<span>嗨，${_selName}</span></span>`;
+  document.getElementById('main-date').textContent=new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'short'});
+  switchTab('today',document.getElementById('nav-today'));
+}
+function doLogout(){STATE.user=null;_selName=null;document.querySelectorAll('.name-btn').forEach(b=>b.classList.remove('selected'));showScreen('login');}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');}
+
+// ────────────────────────────────────────────────
+// WEEK TABS
+// ────────────────────────────────────────────────
+function mkWTabs(cid,fn,selIdx){
+  document.getElementById(cid).innerHTML=WEEKS.map((w,i)=>`<button class="wtab${i===selIdx?' active':''}" onclick="${fn}(${i})">${w.title.split('｜')[0]}</button>`).join('');
+}
+function swWeekAdmin(i){STATE.adminSelWeek=i;STATE.selWeek=i;mkWTabs('wt-admin','swWeekAdmin',i);renderActiveSeg();}
+
+// ────────────────────────────────────────────────
+// WEEK HERO
+// ────────────────────────────────────────────────
+function renderWeekHero(elId,idx){
+  const w=WEEKS[idx];
+  document.getElementById(elId).innerHTML=`<div class="w-hero"><div class="w-hero-l"><div class="wn">${w.sub}</div><div class="wm">${w.metric}</div><div class="wp">${w.period} · ${w.settle} 結算</div></div><div class="w-hero-r"><div class="prize">NT$${Number(w.prize).toLocaleString()}</div>${w.extraPrize?`<div class="extra">+${w.extraPrize}</div>`:''}</div></div>`;
+}
+
+function renderWeekInfoBar(){
+  const w=WEEKS[STATE.selWeek];
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'long'});
+  document.getElementById('week-info-bar').innerHTML=
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 12px;">
+       <div>
+         <div style="font-size:13px;font-weight:800;color:var(--text);">${w.title}</div>
+         <div style="font-size:11px;color:var(--text3);margin-top:2px;">${w.period} · ${dateStr}</div>
+       </div>
+       <div style="text-align:right;">
+         <div style="font-size:16px;font-weight:900;color:var(--gold);">NT$${Number(w.prize).toLocaleString()}</div>
+         <div style="font-size:10px;color:var(--text3);">${w.settle} 結算</div>
+       </div>
+     </div>`;
+}
+
+// ────────────────────────────────────────────────
+// CHECKIN
+// ────────────────────────────────────────────────
+function renderCheckinBody(){
+  const w=WEEKS[STATE.selWeek];
+  const today=getTodayIdx();
+  const key=ckKey(STATE.user,STATE.selWeek,today);
+  const existing=STATE.checkins[key];
+  const el=document.getElementById('checkin-body');
+  const btn=document.getElementById('btn-checkin');
+  const dayLabel=`週${DAY_NAMES[today]}（今天）`;
+
+  if(existing){
+    const sm={approved:'已審核通過',rejected:'未達標，扣5分',submitted:'等待主管審核'};
+    const tc={approved:'tag-approved',rejected:'tag-rejected',submitted:'tag-pending'};
+    const st=existing.status||'submitted';
+    btn.textContent=sm[st];btn.disabled=true;btn.className='btn btn-ghost';
+    const dh=st==='rejected'?'<span class="d-minus">－5 分</span>':'';
+    el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 11px;"><span class="tag ${tc[st]}">${sm[st]}</span>${dh}</div><div class="card-title">${dayLabel} · 已提交（${existing.completed}/${existing.total}）</div>${w.kpi.map(t=>`<div class="t-row"><div class="t-check ${existing.tasks&&existing.tasks[t.id]?'done':''}"></div><div><div class="t-label">${t.label}</div><div class="t-detail">${t.detail}</div></div></div>`).join('')}`;
+    return;
+  }
+  btn.style.display='';btn.textContent='送出今日任務';btn.disabled=false;btn.className='btn btn-primary';
+  el.innerHTML=`<div class="card-title">${dayLabel} · 勾選今天完成的</div>${w.kpi.map(t=>`<div class="t-row"><div class="t-check" id="chk_${t.id}" onclick="togTask('${t.id}',this)"></div><div><div class="t-label">${t.label}</div><div class="t-detail">${t.detail}</div></div></div>`).join('')}`;
+}
+function togTask(id,el){STATE.taskState[id]=!STATE.taskState[id];el.classList.toggle('done',STATE.taskState[id]);}
+function submitCheckin(){
+  const w=WEEKS[STATE.selWeek];
+  const today=getTodayIdx();
+  const tasks={};
+  w.kpi.forEach(t=>tasks[t.id]=!!(STATE.taskState[t.id]));
+  const record={user:STATE.user,week:STATE.selWeek+1,wIdx:STATE.selWeek,day:today,tasks,completed:Object.values(tasks).filter(Boolean).length,total:w.kpi.length,ts:Date.now(),status:'submitted',user_name:STATE.user,week_idx:STATE.selWeek};
+  STATE.taskState={};
+  const btn=document.getElementById('btn-checkin');
+  btn.disabled=true;btn.textContent='送出中...';
+  saveCheckin(record).then(()=>{showToast('任務已提交！','ok');renderCheckinBody();}).catch(()=>{showToast('送出失敗，請重試','err');btn.disabled=false;btn.textContent='送出今日任務';});
+}
+
+// ────────────────────────────────────────────────
+// DATA BODY
+// ────────────────────────────────────────────────
+function renderDataBody(){
+  const yesterday=prevDay(getTodayIdx());
+  const key=vdKey(STATE.user,STATE.selWeek,yesterday);
+  const existing=STATE.viewData[key];
+  const el=document.getElementById('data-body');
+  const btn=document.getElementById('btn-data');
+  const dayLabel=`週${DAY_NAMES[yesterday]}（昨天）`;
+
+  if(existing){
+    btn.textContent=existing.approved?'已審核':'已提交，待審核';btn.disabled=true;btn.className='btn btn-ghost';
+    const fRows=DATA_FIELDS.map(f=>`<div class="n-row"><div class="n-label"><div class="t-label">${f.label}</div></div><div style="font-size:19px;font-weight:900;color:var(--gold);">${(existing.fields&&existing.fields[f.id]||0).toLocaleString()}</div></div>`).join('');
+    el.innerHTML=`<div class="card-title">${dayLabel}</div><div class="notice ${existing.approved?'ok':''}">${existing.approved?'✓ 已審核，積分計入':'等待主管審核...'}</div>${fRows}`;
+    return;
+  }
+  btn.style.display='';btn.textContent='送出數據';btn.disabled=false;btn.className='btn btn-primary';
+  el.innerHTML=`<div class="card-title">${dayLabel} · 填入實際數據</div>${DATA_FIELDS.map(f=>`<div class="n-row"><div class="n-label"><div class="t-label">${f.label}</div><div class="t-detail">${f.detail||''}</div></div><input class="inp-num" type="number" id="fd_${f.id}" placeholder="0" min="0" /></div>`).join('')}`;
+}
+function submitData(){
+  const yesterday=prevDay(getTodayIdx());
+  const fields={};
+  let anyVal=false;
+  DATA_FIELDS.forEach(f=>{
+    const v=parseInt(document.getElementById('fd_'+f.id)?.value)||0;
+    fields[f.id]=v;if(v>0)anyVal=true;
+  });
+  if(!anyVal){showToast('請至少填一個數據','err');return;}
+  const record={user:STATE.user,wIdx:STATE.selWeek,week:STATE.selWeek+1,day:yesterday,fields,ts:Date.now(),approved:false,user_name:STATE.user,week_idx:STATE.selWeek};
+  const btn=document.getElementById('btn-data');
+  btn.disabled=true;btn.textContent='送出中...';
+  saveViewDataRecord(record).then(()=>{showToast('數據已提交！','ok');renderDataBody();}).catch(()=>{showToast('送出失敗，請重試','err');btn.disabled=false;btn.textContent='送出數據';});
+}
+
+// ────────────────────────────────────────────────
+// SEG / TAB SWITCH
+// ────────────────────────────────────────────────
+function switchSeg(seg){
+  ['checkin','data'].forEach(s=>{
+    document.getElementById('sg-'+s+'-c').style.display=s===seg?'':'none';
+    document.getElementById('sg-'+s).classList.toggle('active',s===seg);
+  });
+  if(seg==='data'){renderDataBody();}
+}
+function switchTab(tab,btn){
+  document.querySelectorAll('.tc').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).style.display='';btn.classList.add('active');
+  const i=STATE.selWeek;
+  if(tab==='today'){renderWeekInfoBar();renderWeekHero('wh-today',i);renderCheckinBody();}
+  if(tab==='rank'){renderWeekHero('wh-rank',i);renderRanking();}
+  if(tab==='rules'){renderRules();}
+}
+
+// ────────────────────────────────────────────────
+// SCORING
+// ────────────────────────────────────────────────
+function calcScores(wIdx){
+  const sc={};EMPLOYEES.forEach(e=>sc[e.name]=0);
+  Object.entries(STATE.checkins).filter(([,v])=>v.wIdx===wIdx&&v.status==='rejected').forEach(([,v])=>{sc[v.user]=(sc[v.user]||0)-5;});
+  for(let d=0;d<7;d++){const e=STATE.scores[scKey(wIdx,d)];if(e&&e.winner&&e.winner!=='tie')sc[e.winner]=(sc[e.winner]||0)+e.points;}
+  return sc;
+}
+
+// ────────────────────────────────────────────────
+// RANKING
+// ────────────────────────────────────────────────
+function renderRanking(){
+  const i=STATE.selWeek;
+  const scores=calcScores(i);
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('rank-list').innerHTML=sorted.map(([name,sc],ri)=>{
+    const isMe=name===STATE.user;
+    const color=getAvColor(name);
+    return `<div class="rk-row${isMe?' me':''}"><div class="rk-medal">${medals[ri]||ri+1}</div>${avSVG(color,40)}<div class="rk-name">${name}${isMe?' (我)':''}</div><div class="rk-score">${sc}分</div></div>`;
+  }).join('');
+
+  document.getElementById('daily-data').innerHTML=DAY_NAMES.map((d,di)=>{
+    const sk=scKey(i,di);const winE=STATE.scores[sk];
+    const entries=EMPLOYEES.map(e=>{const vd=STATE.viewData[vdKey(e.name,i,di)];return vd&&vd.approved?{name:e.name,fields:vd.fields}:null;}).filter(Boolean);
+    if(!entries.length)return `<div class="i-row"><span class="i-label">週${d}</span><span style="font-size:11px;color:var(--text3);">尚無數據</span></div>`;
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;"><span style="font-size:13px;font-weight:800;">週${d}</span>${winE?.winner&&winE.winner!=='tie'?`<span style="font-size:12px;color:var(--gold);">🥇 ${winE.winner} +${winE.points}分</span>`:'<span style="font-size:11px;color:var(--text3);">待審核</span>'}</div>${entries.map(e=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:var(--text2);">${e.name}</span><span>${DATA_FIELDS.map(f=>`${f.label.split(' ')[0]} <b>${(e.fields&&e.fields[f.id]||0).toLocaleString()}</b>`).join(' · ')}</span></div>`).join('')}</div>`;
+  }).join('');
+
+  const my=scores[STATE.user]||0;const myRank=sorted.findIndex(([n])=>n===STATE.user)+1;
+  const myWins=Object.values(STATE.scores).filter(v=>v.wIdx===i&&v.winner===STATE.user).length;
+  const myRej=Object.values(STATE.checkins).filter(v=>v.wIdx===i&&v.user===STATE.user&&v.status==='rejected').length;
+  document.getElementById('my-scores').innerHTML=`<div class="sc-card"><div class="sc-num" style="color:var(--gold);">${my}</div><div class="sc-lbl">累計積分</div></div><div class="sc-card"><div class="sc-num" style="color:var(--blue);">#${myRank}</div><div class="sc-lbl">目前排名</div></div><div class="sc-card"><div class="sc-num" style="color:var(--green);">${myWins}</div><div class="sc-lbl">每日第一</div></div><div class="sc-card"><div class="sc-num" style="color:var(--red);">${myRej>0?'−'+(myRej*5):0}</div><div class="sc-lbl">累計扣分</div></div>`;
+}
+
+// ────────────────────────────────────────────────
+// RULES
+// ────────────────────────────────────────────────
+function renderRules(){
+  const w=WEEKS[STATE.selWeek];
+  const nums=['①','②','③','④','⑤','⑥','⑦'];
+  document.getElementById('rules-body').innerHTML=`<div class="card"><div class="sec-title">${w.title}</div><div style="margin-bottom:13px;"><div class="card-title">加分機制</div>${w.bonus.map(b=>`<div class="t-row"><div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;"></div><div class="t-label">${b}</div></div>`).join('')}<div class="t-row"><div style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;"></div><div class="t-label">每日任務未完成（主管退回）：<span style="color:var(--red);font-weight:900;">-5 分</span></div></div></div><div style="margin-bottom:13px;"><div class="card-title">但書</div>${w.rules.map((r,i)=>`<div class="t-row"><span style="font-size:12px;color:var(--text3);min-width:20px;flex-shrink:0;">${nums[i]||'·'}</span><div class="t-label">${r}</div></div>`).join('')}</div><div class="i-row"><span class="i-label">懲罰機制</span><span class="i-value" style="font-size:12px;text-align:right;max-width:60%;">${w.penalty}</span></div>${w.reverse?`<div class="i-row"><span class="i-label">逆轉獎</span><span style="color:var(--gold);font-weight:800;font-size:12px;">${w.reverse}</span></div>`:''}</div>`;
+}
+
+// ────────────────────────────────────────────────
+// ADMIN RENDER
+// ────────────────────────────────────────────────
+let _activeSeg='checkin';
+function renderAdmin(){
+  document.getElementById('admin-date').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+  mkWTabs('wt-admin','swWeekAdmin',STATE.adminSelWeek);
+  renderActiveSeg();
+}
+function renderActiveSeg(){
+  if(_activeSeg==='checkin')renderAdminCheckin();
+  else if(_activeSeg==='data')renderAdminData();
+  else if(_activeSeg==='board')renderAdminBoard();
+  else if(_activeSeg==='settings')renderAdminSettings();
+}
+function switchAdminSeg(seg){
+  ['checkin','data','board','settings'].forEach(s=>{
+    document.getElementById('asc-'+s).style.display=s===seg?'':'none';
+    document.getElementById('asg-'+s).classList.toggle('active',s===seg);
+  });
+  _activeSeg=seg;renderActiveSeg();
+}
+
+// Admin: checkin review
+function renderAdminCheckin(){
+  const pending=Object.entries(STATE.checkins).filter(([,v])=>v.wIdx===STATE.adminSelWeek&&v.status==='submitted').map(([key,val])=>({key,...val}));
+  const el=document.getElementById('asc-checkin');
+  if(!pending.length){el.innerHTML=`<div class="empty">沒有待審核的任務</div>`;return;}
+  const w=WEEKS[STATE.adminSelWeek];
+  el.innerHTML=`<div class="card-title" style="margin-bottom:8px;">待審核 ${pending.length} 筆</div>`+pending.map(p=>{
+    const done=Object.entries(p.tasks||{}).filter(([,v])=>v).map(([k])=>w.kpi.find(t=>t.id===k)?.label).filter(Boolean);
+    const notDone=w.kpi.filter(t=>!p.tasks||!p.tasks[t.id]).map(t=>t.label);
+    return `<div class="ck-rev"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;"><div><span style="font-size:14px;font-weight:800;">${p.user||p.user_name}</span><span style="font-size:11px;color:var(--text3);margin-left:8px;">第${p.week}週 週${DAY_NAMES[p.day]}</span></div><span class="tag tag-pending">待審核</span></div><div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:4px;">${done.length?'✅ '+done.join('、'):''}${notDone.length?`<br>❌ 未完成：${notDone.join('、')}`:'（全部完成）'}</div><div class="notice" style="font-size:11px;margin-bottom:0;">核准 = 正常計分 ｜ 退回 = <span style="color:var(--red);font-weight:900;">－5 分</span></div><div class="act-btns"><button class="act-approve" onclick="reviewCk('${p.key}',true)">✓ 核准</button><button class="act-reject" onclick="reviewCk('${p.key}',false)">✗ 退回 (－5)</button></div></div>`;
+  }).join('');
+}
+function reviewCk(key,approved){
+  if(!STATE.checkins[key])return;
+  const status=approved?'approved':'rejected';
+  updateCheckinStatus(key,status).then(()=>{
+    showToast(approved?'已核准':'已退回 -5分',approved?'ok':'err');
+    renderAdminCheckin();
+    if(_activeSeg==='board')renderAdminBoard();
+  });
+}
+
+// Admin: data review
+function renderAdminData(){
+  const pending=Object.entries(STATE.viewData).filter(([,v])=>!v.approved&&v.wIdx===STATE.adminSelWeek).map(([key,val])=>({key,...val}));
+  const el=document.getElementById('asc-data');
+  if(!pending.length){el.innerHTML=`<div class="empty">沒有待審核的數據</div>`;return;}
+  const byDay={};
+  pending.forEach(p=>{const dk=scKey(STATE.adminSelWeek,p.day);if(!byDay[dk])byDay[dk]={day:p.day,items:[]};byDay[dk].items.push(p);});
+  el.innerHTML=`<div class="card-title" style="margin-bottom:8px;">待審核 ${pending.length} 筆</div>`+Object.entries(byDay).map(([dk,group])=>{
+    const sw=STATE.adminWinnerPick[dk];const bothIn=group.items.length>=2;
+    return `<div class="rev-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:14px;font-weight:800;">第${STATE.adminSelWeek+1}週 週${DAY_NAMES[group.day]}</span><span style="font-size:11px;color:var(--text3);">${bothIn?'雙方已提交':'等待另一方'}</span></div><div class="cmp-grid">${group.items.map(p=>`<div class="cmp-c ${sw===p.user_name?'win':''}"><div class="cmp-n">${p.user_name}</div>${DATA_FIELDS.map(f=>`<div class="cmp-stat">${f.label}</div><div class="cmp-val">${(p.fields&&p.fields[f.id]||0).toLocaleString()}</div>`).join('')}</div>`).join('')}${group.items.length<2?`<div class="cmp-c" style="opacity:.3;"><div class="cmp-n">等待...</div><div class="cmp-val">—</div></div>`:''}</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;">選當日第一名：</div><div class="win-btns">${EMPLOYEES.map(e=>`<button class="win-pick ${sw===e.name?'sel':''}" onclick="pickWinner('${dk}','${e.name}')">${e.emoji} ${e.name}</button>`).join('')}<button class="win-pick ${sw==='tie'?'sel':''}" onclick="pickWinner('${dk}','tie')">平手</button></div><button class="btn btn-gold" onclick="approveDay('${dk}',${STATE.adminSelWeek},${group.day})" ${!sw||!bothIn?'disabled':''}>${sw&&sw!=='tie'?`確認 🥇 ${sw}`:'確認（平手）'}</button></div>`;
+  }).join('');
+}
+function pickWinner(dk,name){STATE.adminWinnerPick[dk]=name;renderAdminData();}
+async function approveDay(dk,wIdx,day){
+  const winner=STATE.adminWinnerPick[dk];if(!winner)return;
+  let pts=10;
+  if(winner!=='tie'){let streak=0;for(let d=day-1;d>=0;d--){const sk=scKey(wIdx,d);if(STATE.scores[sk]?.winner===winner)streak++;else break;}if(streak>=1)pts+=5;}
+  const sk=scKey(wIdx,day);
+  const scoreRecord={wIdx,day,winner:winner==='tie'?null:winner,points:pts,ts:Date.now()};
+  await Promise.all(EMPLOYEES.map(e=>approveViewData(e.name,wIdx,day)));
+  await saveScore(sk,scoreRecord);
+  delete STATE.adminWinnerPick[dk];
+  showToast(winner==='tie'?'平手，未計分':`${winner} +${pts}分 🥇`,'ok');
+  renderAdminData();renderAdminBoard();
+}
+
+// Admin: board
+function renderAdminBoard(){
+  const i=STATE.adminSelWeek;const scores=calcScores(i);
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('asc-board').innerHTML=`<div class="card"><div class="sec-title">積分排行</div>${sorted.map(([name,sc],ri)=>{const color=getAvColor(name);return `<div class="rk-row"><div class="rk-medal">${medals[ri]||ri+1}</div>${avSVG(color,40)}<div class="rk-name">${name}</div><div class="rk-score">${sc}分</div></div>`;}).join('')}</div><div class="card"><div class="sec-title">每日明細</div>${DAY_NAMES.map((d,di)=>{const sk=scKey(i,di);const e=STATE.scores[sk];const ckRows=EMPLOYEES.map(emp=>{const ck=STATE.checkins[ckKey(emp.name,i,di)];if(!ck)return`<span style="color:var(--text3);font-size:11px;">${emp.name}：未提交</span>`;const col=ck.status==='approved'?'var(--green)':ck.status==='rejected'?'var(--red)':'var(--orange)';const lbl=ck.status==='approved'?'✓':ck.status==='rejected'?'−5':' 待審';return`<span style="color:${col};font-size:11px;">${emp.name}：${lbl}</span>`;}).join(' · ');return`<div style="padding:9px 0;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;"><span style="font-size:13px;font-weight:800;">週${d}</span>${e?.winner?`<span style="font-size:12px;color:var(--gold);">🥇 ${e.winner} +${e.points}</span>`:e?'<span style="font-size:11px;color:var(--text3);">平手</span>':'<span style="font-size:11px;color:var(--text3);">待審核</span>'}</div><div>${ckRows}</div></div>`;}).join('')}</div>`;
+}
+
+// ────────────────────────────────────────────────
+// ADMIN SETTINGS
+// ────────────────────────────────────────────────
+function renderAdminSettings(){
+  const i=STATE.adminSelWeek;const w=WEEKS[i];
+  const fieldRows=DATA_FIELDS.length
+    ?DATA_FIELDS.map((f,fi)=>`<div class="mgmt-row"><div class="mgmt-label"><div>${f.label}</div><div class="mgmt-sub">${f.detail||'無說明'}</div></div><button class="del-btn" onclick="delGlobalField(${fi})">×</button></div>`).join('')
+    :`<div style="font-size:12px;color:var(--text3);padding:8px 0;">尚無欄位</div>`;
+  document.getElementById('asc-settings').innerHTML=`
+    <div class="card">
+      <div class="sec-title">補填數據欄位（全部週共用）</div>
+      <div class="notice info" style="margin-bottom:12px;">新增或刪除欄位後，所有人都會即時同步</div>
+      <div id="global-fields-list">${fieldRows}</div>
+      <div class="add-row" style="margin-top:10px;">
+        <input class="inp inp-sm" id="gf-label" placeholder="欄位名稱（例：留言數）" style="flex:1;" />
+        <input class="inp inp-sm" id="gf-detail" placeholder="說明（選填）" style="width:110px;" />
+        <button class="btn btn-sm btn-primary" onclick="addGlobalField()" style="width:60px;">＋ 加</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">週設定：${w.title}</div>
+      <button class="btn btn-primary btn-sm" onclick="openWeekSettings(${i})" style="width:100%;margin-bottom:10px;">編輯本週 KPI 任務</button>
+      <div class="notice">新增/刪減本週的每日任務打卡項目</div>
+    </div>
+    <div class="card">
+      <div class="sec-title">新增週數</div>
+      <button class="btn btn-gold" onclick="openModal('add-week')">＋ 新增下一週</button>
+    </div>`;
+}
+
+async function addGlobalField(){
+  const label=document.getElementById('gf-label').value.trim();
+  const detail=document.getElementById('gf-detail').value.trim();
+  if(!label){showToast('請輸入欄位名稱','err');return;}
+  DATA_FIELDS.push({id:genId(),label,detail});
+  await saveDataFields();
+  document.getElementById('gf-label').value='';document.getElementById('gf-detail').value='';
+  renderAdminSettings();showToast('已新增欄位（全部人同步）','ok');
+}
+async function delGlobalField(i){
+  if(!confirm('確定刪除此欄位？所有週都會移除。'))return;
+  DATA_FIELDS.splice(i,1);
+  await saveDataFields();
+  renderAdminSettings();showToast('已刪除','ok');
+}
+
+function openWeekSettings(idx){
+  STATE.editingWeekIdx=idx;const w=WEEKS[idx];
+  document.getElementById('wset-title').textContent=`KPI 任務：${w.title}`;
+  renderWSetKpi();
+  openModal('week-settings');
+}
+function renderWSetKpi(){
+  const w=WEEKS[STATE.editingWeekIdx];
+  document.getElementById('wset-kpi-list').innerHTML=w.kpi.length?w.kpi.map((t,i)=>`<div class="mgmt-row"><div class="mgmt-label"><div>${t.label}</div><div class="mgmt-sub">${t.detail}</div></div><button class="del-btn" onclick="delKpi(${i})">×</button></div>`).join(''):`<div style="font-size:12px;color:var(--text3);padding:8px 0;">尚無任務，請新增</div>`;
+}
+
+async function addKpi(){
+  const label=document.getElementById('new-kpi-label').value.trim();
+  const detail=document.getElementById('new-kpi-detail').value.trim();
+  if(!label){showToast('請輸入任務名稱','err');return;}
+  WEEKS[STATE.editingWeekIdx].kpi.push({id:genId(),label,detail});
+  await saveWeeks();
+  document.getElementById('new-kpi-label').value='';document.getElementById('new-kpi-detail').value='';
+  renderWSetKpi();showToast('已新增任務','ok');
+}
+async function delKpi(i){
+  if(!confirm('確定刪除此任務？'))return;
+  WEEKS[STATE.editingWeekIdx].kpi.splice(i,1);
+  await saveWeeks();
+  renderWSetKpi();showToast('已刪除','ok');
+}
+
+async function deleteWeek(){
+  if(WEEKS.length<=1){showToast('至少保留一週','err');return;}
+  if(!confirm(`確定刪除「${WEEKS[STATE.editingWeekIdx].title}」？`))return;
+  WEEKS.splice(STATE.editingWeekIdx,1);
+  await saveWeeks();
+  STATE.adminSelWeek=Math.min(STATE.adminSelWeek,WEEKS.length-1);
+  STATE.selWeek=STATE.adminSelWeek;
+  closeModal('week-settings');renderAdmin();showToast('已刪除週數','ok');
+}
+
+async function confirmAddWeek(){
+  const title=document.getElementById('new-week-title').value.trim();
+  const metric=document.getElementById('new-week-metric').value.trim();
+  const period=document.getElementById('new-week-period').value.trim();
+  const settle=document.getElementById('new-week-settle').value.trim();
+  const prize=parseInt(document.getElementById('new-week-prize').value)||1000;
+  const extra=document.getElementById('new-week-extra').value.trim();
+  if(!title){showToast('請輸入週主題','err');return;}
+  const prev=WEEKS[WEEKS.length-1];
+  const newWeek={id:WEEKS.length+1,title,sub:title.split('｜')[1]||title,period,settle,metric:metric||'競賽指標',prize,extraPrize:extra,kpi:JSON.parse(JSON.stringify(prev.kpi)),bonus:JSON.parse(JSON.stringify(prev.bonus)),rules:JSON.parse(JSON.stringify(prev.rules)),penalty:prev.penalty,reverse:prev.reverse||''};
+  WEEKS.push(newWeek);
+  await saveWeeks();
+  closeModal('add-week');
+  ['new-week-title','new-week-metric','new-week-period','new-week-settle','new-week-extra'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-week-prize').value='';
+  STATE.adminSelWeek=WEEKS.length-1;renderAdmin();
+  showToast('已新增第'+WEEKS.length+'週 🎉','ok');
+}
+
+// keyboard
+document.getElementById('admin-pw').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin();});
+
+// ────────────────────────────────────────────────
+// INIT — preload settings so login screen is ready
+// ────────────────────────────────────────────────
+(async function init(){
+  showLoading('初始化...');
+  try {
+    await loadSettings();
+  } catch(e) {
+    // ignore, use defaults
+  } finally {
+    hideLoading();
+  }
+  renderColorPickers();
+})();
+</script>
+</body>
+</html>
